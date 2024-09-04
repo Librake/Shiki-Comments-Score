@@ -78,18 +78,30 @@
 
     // Функция для добавления ID пользователя к комментариям
     async function addUserIdToComments(comments) {
-        console.log(`Processing ${comments.length} comments...`);
+    console.log(`Processing ${comments.length} comments...`);
 
-        for (const comment of comments) {
-            const userId = comment.getAttribute('data-user_id');
-            const userNameElement = comment.querySelector('.name-date .name');
+    for (const comment of comments) {
+        const userId = comment.getAttribute('data-user_id');
+        const userNameElement = comment.querySelector('.name-date .name');
 
-            // Проверяем, существует ли уже подпись для этого комментария
-            if (userId && userNameElement && !userNameElement.parentNode.querySelector('.user-score')) {
-                // Создание нового элемента для отображения информации
-                const idSpan = document.createElement('span');
-                idSpan.className = 'user-score';
-                idSpan.style.marginLeft = '5px';
+        // Проверяем, существует ли уже подпись для этого комментария
+        if (userId && userNameElement && !userNameElement.parentNode.querySelector('.user-score')) {
+            // Создание кнопки для получения данных
+            const loadButton = document.createElement('button');
+            loadButton.className = 'user-score-button';
+            loadButton.style.marginLeft = '5px';
+            loadButton.textContent = 'Load';
+            loadButton.style.fontSize = 'small'; // Размер кнопки маленький
+            loadButton.style.padding = '2px 5px'; // Внутренние отступы
+
+            // Добавление кнопки после имени пользователя
+            userNameElement.parentNode.insertBefore(loadButton, userNameElement.nextSibling);
+
+            // Обработчик клика по кнопке
+            loadButton.addEventListener('click', async function () {
+                // Отключаем кнопку, чтобы предотвратить повторные нажатия
+                loadButton.disabled = true;
+                loadButton.textContent = 'Loading...';
 
                 // Получение данных о статусе и оценке
                 const { status, score } = await processUserId(userId);
@@ -107,7 +119,7 @@
                     // Определение цвета в зависимости от статуса
                     switch (status) {
                         case 'planned':
-                            color = '#FFA500'; // серый
+                            color = '#FFA500'; // желтый
                             break;
                         case 'watching':
                             color = '#00BFFF'; // голубой
@@ -125,50 +137,54 @@
                     }
                 }
 
+                // Замена кнопки на текст с информацией
+                const idSpan = document.createElement('span');
+                idSpan.className = 'user-score';
                 idSpan.textContent = displayText;
-                idSpan.style.color = color; // Применение цвета
+                idSpan.style.marginLeft = '5px';
+                idSpan.style.color = color;
 
-                // Добавление idSpan после имени пользователя
-                userNameElement.parentNode.insertBefore(idSpan, userNameElement.nextSibling);
-            }
+                loadButton.replaceWith(idSpan); // Замена кнопки на текст
+            });
         }
     }
+}
 
     // Функция для отслеживания добавления новых комментариев
     function observeCommentsLoaded() {
-        const commentsContainer = document.querySelector('.b-comments');
+    const commentsContainer = document.querySelector('.b-comments');
 
-        if (!commentsContainer) {
-            console.error('Comments container not found.');
-            return;
-        }
+    if (!commentsContainer) {
+        console.error('Comments container not found.');
+        return;
+    }
 
-        console.log('Setting up MutationObserver on comments container...');
+    console.log('Setting up MutationObserver on comments container...');
 
-        const observer = new MutationObserver(mutations => {
-            mutations.forEach(mutation => {
-                mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        // Проверка на добавление контейнера с классом comments-loaded
-                        if (node.classList.contains('comments-loaded')) {
-                            console.log('New comments-loaded container added:', node);
-                            const newComments = node.querySelectorAll('.b-comment');
-                            addUserIdToComments(newComments);
-                        }
-                        // Проверка на добавление комментария напрямую в b-comments
-                        else if (node.classList.contains('b-comment')) {
-                            console.log('New comment added directly to b-comments:', node);
-                            addUserIdToComments([node]);
-                        }
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    // Проверка на добавление контейнера с классом comments-loaded
+                    if (node.classList.contains('comments-loaded')) {
+                        console.log('New comments-loaded container added:', node);
+                        const newComments = node.querySelectorAll('.b-comment');
+                        addUserIdToComments(newComments);
                     }
-                });
+                    // Проверка на добавление комментария напрямую в b-comments
+                    else if (node.classList.contains('b-comment')) {
+                        console.log('New comment added directly to b-comments:', node);
+                        addUserIdToComments([node]);
+                    }
+                }
             });
         });
+    });
 
-        observer.observe(commentsContainer, { childList: true, subtree: true });
+    observer.observe(commentsContainer, { childList: true, subtree: true });
 
-        console.log('MutationObserver is now watching for new comments and comments-loaded containers.');
-    }
+    console.log('MutationObserver is now watching for new comments and comments-loaded containers.');
+}
 
 
     // Инициализация скрипта
