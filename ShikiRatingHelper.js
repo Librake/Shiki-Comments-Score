@@ -35,6 +35,42 @@
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    function setCommentStats(commentId, userData) {
+        const comment = document.querySelector(`.b-comment[id="${commentId}"]`);
+        if (comment) {
+            const formattedScore = userData.score === 0 ? '' : `: ${userData.score}`;
+            const displayText = `(${userData.status}${formattedScore})`;
+
+            // Определение цвета в зависимости от статуса
+            let color = '#888'; // Цвет по умолчанию (серый)
+            switch (userData.status) {
+                case 'planned':
+                    color = '#FFA500'; // желтый
+                    break;
+                case 'watching':
+                    color = '#00BFFF'; // голубой
+                    break;
+                case 'completed':
+                case 'rewatching':
+                    color = '#32CD32'; // зеленый
+                    break;
+                case 'dropped':
+                case 'on_hold':
+                    color = '#FF4500'; // красный
+                    break;
+                default:
+                    color = '#888'; // серый для неизвестных статусов
+            }
+
+            const scoreButton = comment.querySelector('.user-score-btn');
+            if (scoreButton) {
+                scoreButton.textContent = displayText;
+                scoreButton.style.color = color;
+                scoreButton.disabled = false;
+            }
+        }
+    }
+
     // Функция для обработки данных пользователя
     async function getUserStats(userId) {
         const userData = userMap.get(userId);
@@ -90,48 +126,23 @@
         console.log(userData);
         userData.showStats = true; // Устанавливаем флаг отображения статистики
 
-        const formattedScore = userData.score === 0 ? '' : `: ${userData.score}`;
-        const displayText = `(${userData.status}${formattedScore})`;
-
-        // Определение цвета в зависимости от статуса
-        let color = '#888'; // Цвет по умолчанию (серый)
-        switch (userData.status) {
-            case 'planned':
-                color = '#FFA500'; // желтый
-                break;
-            case 'watching':
-                color = '#00BFFF'; // голубой
-                break;
-            case 'completed':
-            case 'rewatching':
-                color = '#32CD32'; // зеленый
-                break;
-            case 'dropped':
-            case 'on_hold':
-                color = '#FF4500'; // красный
-                break;
-            default:
-                color = '#888'; // серый для неизвестных статусов
-        }
-
         // Обновляем все комментарии пользователя
         userData.comments.forEach(commentId => {
-            const comment = document.querySelector(`.b-comment[id="${commentId}"]`);
-            if (comment) {
-                const scoreButton = comment.querySelector('.user-score-btn');
-                if (scoreButton) {
-                    scoreButton.textContent = displayText;
-                    scoreButton.style.color = color;
-                }
-            }
+            setCommentStats(commentId, userData);
         });
     }
 
     // Функция для сброса кнопки в исходное состояние
-    function resetButton(button) {
-        button.textContent = 'Load'; // Возвращаем исходную надпись
-        button.disabled = false; // Разблокируем кнопку
-        button.classList.remove('loading'); // Убираем класс состояния загрузки
+    function resetButton(commentId) {
+        const comment = document.querySelector(`.b-comment[id="${commentId}"]`);
+        if (comment) {
+            const scoreButton = comment.querySelector('.user-score-btn');
+            if (scoreButton) {
+                scoreButton.textContent = 'Load'; // Возвращаем исходную надпись
+                scoreButton.disabled = false; // Разблокируем кнопку
+                scoreButton.style.color = 'black'
+            }
+        } 
     }
 
     // Функция для добавления кнопки к каждому комментарию
@@ -140,26 +151,42 @@
 
         if (userNameElement && !userNameElement.parentNode.querySelector('.user-score')) {
             // Создание кнопки для загрузки данных
+            const commentId = comment.id;
             const scoreButton = document.createElement('button');
             scoreButton.textContent = 'Load';
             scoreButton.style.marginLeft = '5px';
             scoreButton.className = 'user-score-btn';
-            scoreButton.id = `load-btn-${comment.id}`;
+            scoreButton.id = `score-btn-${commentId}`;
 
             // При нажатии загружаем данные пользователя и обновляем все его комментарии
             scoreButton.addEventListener('click', async function () {
                 if (scoreButton.classList.contains('loading')) return; // Не выполнять, если уже идет загрузка
 
-                scoreButton.textContent = 'Loading...';
-                scoreButton.disabled = true;
-                scoreButton.classList.add('loading');
+                const userData = userMap.get(userId);
 
-                await updateAllUserComments(userId);
+                if (userData.showStats) {
 
-                //resetButton(scoreButton); // По завершении возвращаем кнопку в исходное состояние
+                    userData.comments.forEach(commentId => {
+                        resetButton(commentId);
+                    });
+
+                    userData.showStats = false;
+                    userMap.set(userId, userData);
+                }
+                else {
+                    scoreButton.textContent = 'Loading...';
+                    scoreButton.disabled = true;
+
+                    await updateAllUserComments(userId);
+                }
             });
 
             userNameElement.parentNode.insertBefore(scoreButton, userNameElement.nextSibling);
+
+            const userData = userMap.get(userId);
+            if (userData.showStats) {
+                setCommentStats(commentId, userData);
+            }
         }
     }
 
@@ -168,7 +195,8 @@
         if (!userMap.has(userId)) {
             userMap.set(userId, { status: 'N/A', score: 'N/A', showStats: false, comments: [], statsLoaded: false });
         }
-        userMap.get(userId).comments.push(comment.id);
+        const userData = userMap.get(userId);
+        userData.comments.push(comment.id);
     }
 
     // Функция для инициализации массива комментариев
