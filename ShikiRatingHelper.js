@@ -150,10 +150,12 @@
     
         if (userNameElement) {
             const existingButton = userNameElement.parentNode.querySelector('.user-score-btn');
+            
+            const userData = userMap.get(userId);
+            const commentId = comment.id;
     
             // Проверяем, есть ли кнопка
             if (!existingButton) {
-                const commentId = comment.id;
                 const scoreButton = document.createElement('button');
                 scoreButton.textContent = 'Load';
                 scoreButton.style.marginLeft = '5px';
@@ -165,7 +167,6 @@
     
                 userNameElement.parentNode.insertBefore(scoreButton, userNameElement.nextSibling);
     
-                const userData = userMap.get(userId);
                 if (userData.showStats) {
                     setCommentStats(commentId, userData);
                 }
@@ -173,7 +174,19 @@
                 // Если кнопка существует, проверяем, есть ли у неё обработчик события
                 //if (!existingButton.dataset.listenerAttached) {
                     // Добавляем обработчик, если его нет
+                    console.log(userId);
                     attachButtonListener(existingButton, userId);
+
+                    if (userData.showStats) {
+                        console.log('setup');
+
+                        setCommentStats(commentId, userData);
+                    }
+                    else {
+                        console.log('reset');
+
+                        resetButton(commentId);
+                    }
                 //}
             }
         }
@@ -200,12 +213,14 @@
     }
     
     // Функция для добавления комментария пользователя в userMap
-    function addCommentToMap(userId, comment) {
+    function addCommentToMap(userId, commentId) {
         if (!userMap.has(userId)) {
             userMap.set(userId, { status: 'N/A', score: 'N/A', showStats: false, comments: [], statsLoaded: false });
         }
         const userData = userMap.get(userId);
-        userData.comments.push(comment.id);
+        if (!userData.comments.includes(commentId)) {
+            userData.comments.push(commentId);
+        }
     }
 
     // Функция для инициализации массива комментариев
@@ -215,7 +230,7 @@
         for (const comment of comments) {
             const userId = comment.getAttribute('data-user_id');
             if (userId) {
-                addCommentToMap(userId, comment);
+                addCommentToMap(userId, comment.id);
                 addButtonToComment(comment, userId);
             }
         }
@@ -256,6 +271,7 @@
     function init() {
         console.log('Initializing script...');
         const url = window.location.href;
+        console.log(userMap);
 
         if (!url.includes('https://shikimori.one/animes/') &&
             !url.includes('https://shikimori.one/forum/animanga/anime')) {
