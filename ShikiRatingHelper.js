@@ -199,8 +199,6 @@
         button.dataset.listenerAttached = 'true';
     }
     
-    
-
     // Функция для добавления комментария пользователя в userMap
     function addCommentToMap(userId, comment) {
         if (!userMap.has(userId)) {
@@ -259,7 +257,8 @@
         console.log('Initializing script...');
         const url = window.location.href;
 
-        if (!url.includes('https://shikimori.one/animes/')) {
+        if (!url.includes('https://shikimori.one/animes/') &&
+            !url.includes('https://shikimori.one/forum/animanga/anime')) {
             console.log('URL does not match expected patterns. Stopping script.');
             return;
         }
@@ -268,9 +267,7 @@
         console.log(`Anime ID from URL: ${animeId}`);
 
         const initialComments = document.querySelectorAll('.b-comment');
-        setTimeout(function () {
-            initComments(initialComments);
-        }, 1000);
+        initComments(initialComments);
 
         observeCommentsLoaded();
     }
