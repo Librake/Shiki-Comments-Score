@@ -150,7 +150,7 @@
     
         if (userNameElement) {
             const existingButton = userNameElement.parentNode.querySelector('.user-score-btn');
-            
+
             const userData = userMap.get(userId);
             const commentId = comment.id;
     
@@ -171,23 +171,15 @@
                     setCommentStats(commentId, userData);
                 }
             } else {
-                // Если кнопка существует, проверяем, есть ли у неё обработчик события
-                //if (!existingButton.dataset.listenerAttached) {
-                    // Добавляем обработчик, если его нет
-                    console.log(userId);
-                    attachButtonListener(existingButton, userId);
+                console.log(userId);
+                attachButtonListener(existingButton, userId);
 
-                    if (userData.showStats) {
-                        console.log('setup');
-
-                        setCommentStats(commentId, userData);
-                    }
-                    else {
-                        console.log('reset');
-
-                        resetButton(commentId);
-                    }
-                //}
+                if (userData.showStats) {
+                    setCommentStats(commentId, userData);
+                }
+                else {
+                    resetButton(commentId);
+                }
             }
         }
     }
@@ -207,9 +199,6 @@
                 await updateAllUserComments(userId);
             }
         });
-    
-        // Отмечаем, что обработчик был добавлен
-        button.dataset.listenerAttached = 'true';
     }
     
     // Функция для добавления комментария пользователя в userMap
@@ -271,7 +260,6 @@
     function init() {
         console.log('Initializing script...');
         const url = window.location.href;
-        console.log(userMap);
 
         if (!url.includes('https://shikimori.one/animes/') &&
             !url.includes('https://shikimori.one/forum/animanga/anime')) {
