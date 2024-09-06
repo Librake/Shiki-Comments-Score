@@ -39,7 +39,7 @@
         const comment = document.querySelector(`.b-comment[id="${commentId}"]`);
         if (comment) {
             const formattedScore = userData.score === 0 ? '' : `: ${userData.score}`;
-            const displayText = `(${userData.status}${formattedScore})`;
+            let displayText = userData.status === 'N/A' ? '(—)' : `(${userData.status}${formattedScore})`;
 
             // Определение цвета в зависимости от статуса
             let color = '#888'; // Цвет по умолчанию (серый)
@@ -123,7 +123,6 @@
         const userData = await getUserStats(userId);
         userData.showStats = true;
         userMap.set(userId, userData);
-        console.log(userData);
         userData.showStats = true; // Устанавливаем флаг отображения статистики
 
         // Обновляем все комментарии пользователя
@@ -148,47 +147,59 @@
     // Функция для добавления кнопки к каждому комментарию
     function addButtonToComment(comment, userId) {
         const userNameElement = comment.querySelector('.name-date .name');
-
-        if (userNameElement && !userNameElement.parentNode.querySelector('.user-score')) {
-            // Создание кнопки для загрузки данных
-            const commentId = comment.id;
-            const scoreButton = document.createElement('button');
-            scoreButton.textContent = 'Load';
-            scoreButton.style.marginLeft = '5px';
-            scoreButton.className = 'user-score-btn';
-            scoreButton.id = `score-btn-${commentId}`;
-
-            // При нажатии загружаем данные пользователя и обновляем все его комментарии
-            scoreButton.addEventListener('click', async function () {
-                if (scoreButton.classList.contains('loading')) return; // Не выполнять, если уже идет загрузка
-
+    
+        if (userNameElement) {
+            const existingButton = userNameElement.parentNode.querySelector('.user-score-btn');
+    
+            // Проверяем, есть ли кнопка
+            if (!existingButton) {
+                const commentId = comment.id;
+                const scoreButton = document.createElement('button');
+                scoreButton.textContent = 'Load';
+                scoreButton.style.marginLeft = '5px';
+                scoreButton.className = 'user-score-btn';
+                scoreButton.id = `score-btn-${commentId}`;
+    
+                // Добавляем обработчик
+                attachButtonListener(scoreButton, userId);
+    
+                userNameElement.parentNode.insertBefore(scoreButton, userNameElement.nextSibling);
+    
                 const userData = userMap.get(userId);
-
                 if (userData.showStats) {
-
-                    userData.comments.forEach(commentId => {
-                        resetButton(commentId);
-                    });
-
-                    userData.showStats = false;
-                    userMap.set(userId, userData);
+                    setCommentStats(commentId, userData);
                 }
-                else {
-                    scoreButton.textContent = 'Loading...';
-                    scoreButton.disabled = true;
-
-                    await updateAllUserComments(userId);
-                }
-            });
-
-            userNameElement.parentNode.insertBefore(scoreButton, userNameElement.nextSibling);
-
-            const userData = userMap.get(userId);
-            if (userData.showStats) {
-                setCommentStats(commentId, userData);
+            } else {
+                // Если кнопка существует, проверяем, есть ли у неё обработчик события
+                //if (!existingButton.dataset.listenerAttached) {
+                    // Добавляем обработчик, если его нет
+                    attachButtonListener(existingButton, userId);
+                //}
             }
         }
     }
+    
+    function attachButtonListener(button, userId) {
+        button.addEventListener('click', async function () {
+            const userData = userMap.get(userId);
+            if (userData.showStats) {
+                userData.comments.forEach(commentId => {
+                    resetButton(commentId);
+                });
+                userData.showStats = false;
+                userMap.set(userId, userData);
+            } else {
+                button.textContent = 'Loading...';
+                button.disabled = true;
+                await updateAllUserComments(userId);
+            }
+        });
+    
+        // Отмечаем, что обработчик был добавлен
+        button.dataset.listenerAttached = 'true';
+    }
+    
+    
 
     // Функция для добавления комментария пользователя в userMap
     function addCommentToMap(userId, comment) {
