@@ -12,24 +12,36 @@
 (function () {
     'use strict';
 
+    const baseUrl = 'https://shikimori.one';
     const userMap = new Map();
-    let animeId = null;
+    let titleId = null;
+    let titleType = null;
+    let entityType = null;
 
     // Функция для извлечения ID аниме из URL
-    function getAnimeIdFromUrl() {
+    function getTitleIdFromUrl(titleType) {
         const url = window.location.href;
-
-        const match = url.match(/animes\/[a-zA-Z]?(\d+)/);
-        const animePageId = match ? match[1] : null;
-        if (animePageId) return animePageId;
-
-        const forumMatch = url.match(/(?:animes|anime(?:-[a-z]+)?)-?(\d+)/);
-        const animeForumId = forumMatch ? forumMatch[1] : null;
-        if (animeForumId) return animeForumId;
-
-        return null;
+    
+        // Определяем сегменты URL в зависимости от типа
+        const segments = {
+            'Anime': { type: 'animes', forum: 'anime' },
+            'Manga': { type: 'mangas', forum: 'manga' },
+            'Ranobe': { type: 'ranobe', forum: 'ranobe' }
+        }[titleType];
+    
+        if (!segments) {
+            console.log('Invalid titleType provided.');
+            return null;
+        }
+    
+        // Проверяем соответствие для страниц и форумов
+        const pageMatch = url.match(new RegExp(`${segments.type}/[a-zA-Z]*(\\d+)`));
+        if (pageMatch) return pageMatch[1];
+    
+        const forumMatch = url.match(new RegExp(`${segments.forum}-[a-zA-Z]*(\\d+)`));
+        return forumMatch ? forumMatch[1] : null;
     }
-
+    
     // Функция для задержки между запросами
     function delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -81,7 +93,7 @@
             return userData;
         }
 
-        const url = `https://shikimori.one/api/v2/user_rates?user_id=${userId}&target_id=${animeId}&target_type=Anime`;
+        const url = `${baseUrl}/api/v2/user_rates?user_id=${userId}&target_id=${titleId}&target_type=${entityType}`;
         let attempt = 0;
         const maxAttempts = 5;
 
@@ -260,21 +272,37 @@
     function init() {
         console.log('Initializing script...');
         const url = window.location.href;
-
-        if (!url.includes('https://shikimori.one/animes/') &&
-            !url.includes('https://shikimori.one/forum/animanga/anime')) {
+    
+        // Определяем тип по URL
+        if (url.includes(`${baseUrl}/animes/`) || url.includes(`${baseUrl}/forum/animanga/anime`)) {
+            titleType = 'Anime';
+        } else if (url.includes(`${baseUrl}/mangas/`) || url.includes(`${baseUrl}/forum/animanga/manga`)) {
+            titleType = 'Manga';
+        } else if (url.includes(`${baseUrl}/ranobe/`) || url.includes(`${baseUrl}/forum/animanga/ranobe`)) {
+            titleType = 'Ranobe';
+        }
+    
+        // Если не удалось определить тип
+        if (!titleType) {
             console.log('URL does not match expected patterns. Stopping script.');
             return;
         }
 
-        animeId = getAnimeIdFromUrl();
-        console.log(`Anime ID from URL: ${animeId}`);
-
+        entityType = (titleType == 'Ranobe') ? 'Manga' : titleType;
+    
+        console.log(`Detected title type: ${titleType}`);
+        console.log(`Detected entity type: ${entityType}`);
+    
+        titleId = getTitleIdFromUrl(titleType);
+        console.log(`ID from URL: ${titleId}`);
+    
         const initialComments = document.querySelectorAll('.b-comment');
         initComments(initialComments);
-
+    
         observeCommentsLoaded();
     }
+    
+    
 
     function ready(fn) {
         document.addEventListener('page:load', fn);
