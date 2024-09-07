@@ -173,6 +173,7 @@
                 scoreButton.style.marginLeft = '5px';
                 scoreButton.className = 'user-score-btn';
                 scoreButton.id = `score-btn-${commentId}`;
+                scoreButton.style.lineHeight = 'normal';
     
                 // Добавляем обработчик
                 attachButtonListener(scoreButton, userId);
