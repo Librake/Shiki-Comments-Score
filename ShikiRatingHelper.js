@@ -13,6 +13,17 @@
     'use strict';
 
     const baseUrl = 'https://shikimori.one';
+    // Таблица отображаемого текста и цветов для статусов
+    const statusDisplayMap = {
+        planned: { textAnime: 'В планах', textManga: 'В планах', color: '#FFA500' },
+        watching: { textAnime: 'Смотрю', textManga: 'Читаю', color: '#00BFFF' },
+        completed: { textAnime: 'Просмотрено', textManga: 'Прочитано', color: '#32CD32' },
+        rewatching: { textAnime: 'Пересматриваю', textManga: 'Перечитываю', color: '#32CD32' },
+        dropped: { textAnime: 'Брошено', textManga: 'Брошено', color: '#FF4500' },
+        on_hold: { textAnime: 'Отложено', textManga: 'Отложено', color: '#FF4500' },
+        'N/A': { textAnime: '—', textManga: '—', color: '#888' }
+    };
+
     const userMap = new Map();
     let titleId = null;
     let titleType = null;
@@ -50,34 +61,22 @@
     function setCommentStats(commentId, userData) {
         const comment = document.querySelector(`.b-comment[id="${commentId}"]`);
         if (comment) {
-            const formattedScore = userData.score === 0 ? '' : `: ${userData.score}`;
-            let displayText = userData.status === 'N/A' ? '(—)' : `(${userData.status}${formattedScore})`;
-
-            // Определение цвета в зависимости от статуса
-            let color = '#888'; // Цвет по умолчанию (серый)
-            switch (userData.status) {
-                case 'planned':
-                    color = '#FFA500'; // желтый
-                    break;
-                case 'watching':
-                    color = '#00BFFF'; // голубой
-                    break;
-                case 'completed':
-                case 'rewatching':
-                    color = '#32CD32'; // зеленый
-                    break;
-                case 'dropped':
-                case 'on_hold':
-                    color = '#FF4500'; // красный
-                    break;
-                default:
-                    color = '#888'; // серый для неизвестных статусов
-            }
-
+            // Получаем данные отображения для статуса
+            const statusInfo = statusDisplayMap[userData.status] || { textAnime: 'unknown', textManga: 'unknown', color: '#888' };
+    
+            // Выбираем правильный текст в зависимости от entityType (Anime или Manga)
+            const statusText = (entityType === 'Anime') 
+                ? statusInfo.textAnime 
+                : statusInfo.textManga;
+    
+            // Добавляем счёт к тексту статуса, если он есть
+            const scoreText = userData.score === 0 ? '' : `: ${userData.score}`;
+            const displayText = `(${statusText}${scoreText})`; // Текст обрамлён скобками
+    
             const scoreButton = comment.querySelector('.user-score-btn');
             if (scoreButton) {
                 scoreButton.textContent = displayText;
-                scoreButton.style.color = color;
+                scoreButton.style.color = statusInfo.color;
                 scoreButton.disabled = false;
             }
         }
@@ -218,7 +217,7 @@
     // Функция для добавления комментария пользователя в userMap
     function addCommentToMap(userId, commentId) {
         if (!userMap.has(userId)) {
-            userMap.set(userId, { status: 'N/A', score: 'N/A', showStats: false, comments: [], statsLoaded: false });
+            userMap.set(userId, { status: 'N/A', score: 0, showStats: false, comments: [], statsLoaded: false });
         }
         const userData = userMap.get(userId);
         if (!userData.comments.includes(commentId)) {
@@ -293,7 +292,6 @@
         entityType = (titleType == 'Ranobe') ? 'Manga' : titleType;
     
         console.log(`Detected title type: ${titleType}`);
-        console.log(`Detected entity type: ${entityType}`);
     
         titleId = getTitleIdFromUrl(titleType);
         console.log(`ID from URL: ${titleId}`);
@@ -304,8 +302,6 @@
         observeCommentsLoaded();
     }
     
-    
-
     function ready(fn) {
         document.addEventListener('page:load', fn);
         document.addEventListener('turbolinks:load', fn);
