@@ -149,9 +149,9 @@
         if (comment) {
             const scoreButton = comment.querySelector('.user-score-btn');
             if (scoreButton) {
-                scoreButton.textContent = 'Load'; // Возвращаем исходную надпись
+                scoreButton.textContent = '(+)'; // Возвращаем исходную надпись
                 scoreButton.disabled = false; // Разблокируем кнопку
-                scoreButton.style.color = 'black'
+                scoreButton.style.color = 'grey'
             }
         } 
     }
@@ -169,7 +169,8 @@
             // Проверяем, есть ли кнопка
             if (!existingButton) {
                 const scoreButton = document.createElement('button');
-                scoreButton.textContent = 'Load';
+                scoreButton.textContent = '(+)';
+                scoreButton.style.color = 'grey'
                 scoreButton.style.marginLeft = '5px';
                 scoreButton.className = 'user-score-btn';
                 scoreButton.id = `score-btn-${commentId}`;
