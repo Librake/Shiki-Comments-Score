@@ -1,19 +1,20 @@
 // ==UserScript==
-// @name         Shikimori Comments User ID
-// @namespace    http://tampermonkey.net/
-// @version      1.32
-// @description  Add user ID next to comment author's name on Shikimori.one
-// @author       YourName
-// @match        http://shikimori.one/*
-// @match        https://shikimori.one/*
+// @name         Shiki comments score
+// @author       Librake
+// @namespace    https://shikimori.one/Librake
+// @version      1.0
+// @description  Shows each commenter's score of the anime
+// @description:ru Показывает оценку аниме каждого из комментаторов
+// @match        *://shikimori.one/*
+// @icon         https://goo.su/AlA5
 // @grant        none
+// @license      MIT
 // ==/UserScript==
 
 (function () {
     'use strict';
 
-    const baseUrl = 'https://shikimori.one';
-    // Таблица отображаемого текста и цветов для статусов
+    // Таблица для настройки отображаемых названий статусов и их цветов
     const statusDisplayMap = {
         planned: { textAnime: 'В планах', textManga: 'В планах', color: '#FFA500' },
         watching: { textAnime: 'Смотрю', textManga: 'Читаю', color: '#00BFFF' },
@@ -24,16 +25,16 @@
         'N/A': { textAnime: '—', textManga: '—', color: '#888' }
     };
 
+    const baseUrl = 'https://shikimori.one';
+
     const userMap = new Map();
     let titleId = null;
     let titleType = null;
     let entityType = null;
 
-    // Функция для извлечения ID аниме из URL
     function getTitleIdFromUrl(titleType) {
         const url = window.location.href;
     
-        // Определяем сегменты URL в зависимости от типа
         const segments = {
             'Anime': { type: 'animes', forum: 'anime' },
             'Manga': { type: 'mangas', forum: 'manga' },
@@ -41,11 +42,9 @@
         }[titleType];
     
         if (!segments) {
-            console.log('Invalid titleType provided.');
             return null;
         }
     
-        // Проверяем соответствие для страниц и форумов
         const pageMatch = url.match(new RegExp(`${segments.type}/[a-zA-Z]*(\\d+)`));
         if (pageMatch) return pageMatch[1];
     
@@ -53,7 +52,6 @@
         return forumMatch ? forumMatch[1] : null;
     }
     
-    // Функция для задержки между запросами
     function delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -61,17 +59,14 @@
     function setCommentStats(commentId, userData) {
         const comment = document.querySelector(`.b-comment[id="${commentId}"]`);
         if (comment) {
-            // Получаем данные отображения для статуса
             const statusInfo = statusDisplayMap[userData.status] || { textAnime: 'unknown', textManga: 'unknown', color: '#888' };
     
-            // Выбираем правильный текст в зависимости от entityType (Anime или Manga)
             const statusText = (entityType === 'Anime') 
                 ? statusInfo.textAnime 
                 : statusInfo.textManga;
     
-            // Добавляем счёт к тексту статуса, если он есть
             const scoreText = userData.score === 0 ? '' : `: ${userData.score}`;
-            const displayText = `(${statusText}${scoreText})`; // Текст обрамлён скобками
+            const displayText = `(${statusText}${scoreText})`;
     
             const scoreButton = comment.querySelector('.user-score-btn');
             if (scoreButton) {
@@ -82,13 +77,10 @@
         }
     }
 
-    // Функция для обработки данных пользователя
     async function getUserStats(userId) {
         const userData = userMap.get(userId);
 
-        if (userData && userData.statsLoaded) {
-            console.log(`Using cached data for user ID ${userId}`);
-            
+        if (userData && userData.statsLoaded) {   
             return userData;
         }
 
@@ -100,7 +92,6 @@
             try {
                 const response = await fetch(url);
                 const data = await response.json();
-                console.log(`Response code for user ID ${userId}: ${response.status}`);
 
                 if (response.ok) {
                     const entry = data[0];
@@ -113,9 +104,8 @@
                     return userData;
                 } 
                 else if (response.status === 429) {
-                    console.warn(`Rate limit exceeded for user ID ${userId}. Retrying...`);
                     attempt++;
-                    await delay(1000 * attempt); // Увеличение задержки с каждой попыткой
+                    await delay(1000 * attempt);
                 } 
                 else {
                     return userData;
@@ -129,33 +119,29 @@
         return userData;
     }
 
-    // Функция для обновления всех комментариев пользователя
     async function updateAllUserComments(userId) {
         const userData = await getUserStats(userId);
         userData.showStats = true;
         userMap.set(userId, userData);
-        userData.showStats = true; // Устанавливаем флаг отображения статистики
+        userData.showStats = true;
 
-        // Обновляем все комментарии пользователя
         userData.comments.forEach(commentId => {
             setCommentStats(commentId, userData);
         });
     }
 
-    // Функция для сброса кнопки в исходное состояние
     function resetButton(commentId) {
         const comment = document.querySelector(`.b-comment[id="${commentId}"]`);
         if (comment) {
             const scoreButton = comment.querySelector('.user-score-btn');
             if (scoreButton) {
-                scoreButton.textContent = '(+)'; // Возвращаем исходную надпись
-                scoreButton.disabled = false; // Разблокируем кнопку
+                scoreButton.textContent = '(+)';
+                scoreButton.disabled = false;
                 scoreButton.style.color = 'grey'
             }
         } 
     }
 
-    // Функция для добавления кнопки к каждому комментарию
     function addButtonToComment(comment, userId) {
         const userNameElement = comment.querySelector('.name-date .name');
     
@@ -165,7 +151,6 @@
             const userData = userMap.get(userId);
             const commentId = comment.id;
     
-            // Проверяем, есть ли кнопка
             if (!existingButton) {
                 const scoreButton = document.createElement('button');
                 scoreButton.textContent = '(+)';
@@ -174,8 +159,7 @@
                 scoreButton.className = 'user-score-btn';
                 scoreButton.id = `score-btn-${commentId}`;
                 scoreButton.style.lineHeight = 'normal';
-    
-                // Добавляем обработчик
+
                 attachButtonListener(scoreButton, userId);
     
                 userNameElement.parentNode.insertBefore(scoreButton, userNameElement.nextSibling);
@@ -184,7 +168,6 @@
                     setCommentStats(commentId, userData);
                 }
             } else {
-                console.log(userId);
                 attachButtonListener(existingButton, userId);
 
                 if (userData.showStats) {
@@ -214,7 +197,6 @@
         });
     }
     
-    // Функция для добавления комментария пользователя в userMap
     function addCommentToMap(userId, commentId) {
         if (!userMap.has(userId)) {
             userMap.set(userId, { status: 'N/A', score: 0, showStats: false, comments: [], statsLoaded: false });
@@ -225,10 +207,7 @@
         }
     }
 
-    // Функция для инициализации массива комментариев
     function initComments(comments) {
-        console.log(`Processing ${comments.length} comments...`);
-
         for (const comment of comments) {
             const userId = comment.getAttribute('data-user_id');
             if (userId) {
@@ -238,7 +217,6 @@
         }
     }
 
-    // Функция для отслеживания добавления новых комментариев
     function observeCommentsLoaded() {
         const commentsContainer = document.querySelector('.b-comments');
 
@@ -246,8 +224,6 @@
             console.error('Comments container not found.');
             return;
         }
-
-        console.log('Setting up MutationObserver on comments container...');
 
         const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
@@ -265,16 +241,11 @@
         });
 
         observer.observe(commentsContainer, { childList: true, subtree: true });
-
-        console.log('MutationObserver is now watching for new comments and comments-loaded containers.');
     }
 
-    // Инициализация скрипта
     function init() {
-        console.log('Initializing script...');
         const url = window.location.href;
     
-        // Определяем тип по URL
         if (url.includes(`${baseUrl}/animes/`) || url.includes(`${baseUrl}/forum/animanga/anime`)) {
             titleType = 'Anime';
         } else if (url.includes(`${baseUrl}/mangas/`) || url.includes(`${baseUrl}/forum/animanga/manga`)) {
@@ -283,22 +254,14 @@
             titleType = 'Ranobe';
         }
     
-        // Если не удалось определить тип
         if (!titleType) {
-            console.log('URL does not match expected patterns. Stopping script.');
             return;
         }
 
         entityType = (titleType == 'Ranobe') ? 'Manga' : titleType;
-    
-        console.log(`Detected title type: ${titleType}`);
-    
         titleId = getTitleIdFromUrl(titleType);
-        console.log(`ID from URL: ${titleId}`);
-    
         const initialComments = document.querySelectorAll('.b-comment');
         initComments(initialComments);
-    
         observeCommentsLoaded();
     }
     
