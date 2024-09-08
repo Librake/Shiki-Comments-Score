@@ -259,10 +259,17 @@
     }
 
     function init() {
+        const prevTitleType = titleType;
+        const prevTitleId = titleId;
+
         titleType = getTitleTypeFromUrl();
         titleId = getTitleIdFromUrl(titleType);
         if (!titleType || !titleId) {
             return;
+        }
+
+        if(titleId !== prevTitleId || titleType !== prevTitleType) {
+            userMap.clear();
         }
 
         entityType = (titleType == 'Ranobe') ? 'Manga' : titleType;
