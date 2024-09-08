@@ -32,6 +32,21 @@
     let titleType = null;
     let entityType = null;
 
+    function getTitleTypeFromUrl() {
+        const url = window.location.href;
+        if (url.includes(`${baseUrl}/animes/`) || url.includes(`${baseUrl}/forum/animanga/anime`)) {
+            return 'Anime';
+        } 
+        if (url.includes(`${baseUrl}/mangas/`) || url.includes(`${baseUrl}/forum/animanga/manga`)) {
+            return 'Manga';
+        } 
+        if (url.includes(`${baseUrl}/ranobe/`) || url.includes(`${baseUrl}/forum/animanga/ranobe`)) {
+            return 'Ranobe';
+        }
+
+        return null;
+    }
+
     function getTitleIdFromUrl(titleType) {
         const url = window.location.href;
     
@@ -244,22 +259,13 @@
     }
 
     function init() {
-        const url = window.location.href;
-    
-        if (url.includes(`${baseUrl}/animes/`) || url.includes(`${baseUrl}/forum/animanga/anime`)) {
-            titleType = 'Anime';
-        } else if (url.includes(`${baseUrl}/mangas/`) || url.includes(`${baseUrl}/forum/animanga/manga`)) {
-            titleType = 'Manga';
-        } else if (url.includes(`${baseUrl}/ranobe/`) || url.includes(`${baseUrl}/forum/animanga/ranobe`)) {
-            titleType = 'Ranobe';
-        }
-    
-        if (!titleType) {
+        titleType = getTitleTypeFromUrl();
+        titleId = getTitleIdFromUrl(titleType);
+        if (!titleType || !titleId) {
             return;
         }
 
         entityType = (titleType == 'Ranobe') ? 'Manga' : titleType;
-        titleId = getTitleIdFromUrl(titleType);
         const initialComments = document.querySelectorAll('.b-comment');
         initComments(initialComments);
         observeCommentsLoaded();
