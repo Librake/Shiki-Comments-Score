@@ -1,10 +1,9 @@
 // ==UserScript==
-// @name         Shiki comments score
+// @name         Shiki Comments Score
 // @author       Librake
 // @namespace    https://shikimori.one/Librake
 // @version      1.0
-// @description  Shows each commenter's score of the anime
-// @description:ru Показывает оценку аниме каждого из комментаторов
+// @description  Показывает оценку аниме каждого из комментаторов
 // @match        *://shikimori.one/*
 // @icon         https://goo.su/AlA5
 // @grant        none
