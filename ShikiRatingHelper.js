@@ -31,8 +31,23 @@
     let titleType = null;
     let entityType = null;
 
-    function getTitleTypeFromUrl() {
-        const url = window.location.href;
+    function isOnNewsPage(url) {
+        if (url.includes(`${baseUrl}/forum/news`)) return true;
+        return false;
+    }
+
+    function getTitleLinkFromNewsPage() {
+        const headers = document.querySelectorAll('header');
+        for (const header of headers) {
+            const titleLinkElement = header.querySelector('.about .b-link.bubbled-processed');
+            if (titleLinkElement) {
+                return titleLinkElement.getAttribute('href');
+            }
+        }
+        return null;
+    }
+
+    function getTitleTypeFromUrl(url) {
         if (url.includes(`${baseUrl}/animes/`) || url.includes(`${baseUrl}/forum/animanga/anime`)) {
             return 'Anime';
         } 
@@ -46,8 +61,7 @@
         return null;
     }
 
-    function getTitleIdFromUrl(titleType) {
-        const url = window.location.href;
+    function getTitleIdFromUrl(titleType, url) {
     
         const segments = {
             'Anime': { type: 'animes', forum: 'anime' },
@@ -258,11 +272,18 @@
     }
 
     function init() {
+        let url = window.location.href;
         const prevTitleType = titleType;
         const prevTitleId = titleId;
 
-        titleType = getTitleTypeFromUrl();
-        titleId = getTitleIdFromUrl(titleType);
+        const onNewsPage = isOnNewsPage(url);
+        if (onNewsPage) {
+            url = getTitleLinkFromNewsPage();
+            if (!url) return;
+        }
+
+        titleType = getTitleTypeFromUrl(url);
+        titleId = getTitleIdFromUrl(titleType, url);
         if (!titleType || !titleId) {
             return;
         }
