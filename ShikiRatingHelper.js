@@ -2,7 +2,7 @@
 // @name         Shiki Comments Score
 // @author       Librake
 // @namespace    https://shikimori.one/Librake
-// @version      1.0
+// @version      1.1
 // @description  Показывает оценку аниме каждого из комментаторов
 // @match        *://shikimori.one/*
 // @icon         https://goo.su/AlA5
